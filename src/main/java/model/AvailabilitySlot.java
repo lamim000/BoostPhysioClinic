@@ -22,15 +22,15 @@ public class AvailabilitySlot {
         return time;
     }
 
-    public LocalDateTime getNextOccurrence() {
-        LocalDate now = LocalDate.now();
-        int today = now.getDayOfWeek().getValue();
+    public LocalDateTime getNextOccurrence(LocalDate fromDate) {
+        int today = fromDate.getDayOfWeek().getValue();
         int target = day.getValue();
         int daysToAdd = (target - today + 7) % 7;
-        if (daysToAdd == 0 && LocalTime.now().isAfter(time)) {
-            daysToAdd = 7;
-        }
-        return now.plusDays(daysToAdd).atTime(time);
+        return fromDate.plusDays(daysToAdd).atTime(time);
+    }
+
+    public LocalDateTime getNextOccurrence() {
+        return getNextOccurrence(LocalDate.now());
     }
 
     @Override

@@ -1,7 +1,9 @@
 package service;
 
 import model.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,9 +40,10 @@ public class BookingManager {
     public boolean bookAppointment(Appointment appointment) {
         boolean conflict = appointments.stream().anyMatch(existing ->
             existing.getTime().equals(appointment.getTime()) &&
-            (existing.getPatient().getId().equals(appointment.getPatient().getId()) ||
-             existing.getPhysio().getId().equals(appointment.getPhysio().getId())) &&
-            existing.getStatus() == Appointment.Status.BOOKED
+            existing.getStatus() == Appointment.Status.BOOKED && (
+                (existing.getPatient() != null && existing.getPatient().getId().equals(appointment.getPatient().getId())) ||
+                existing.getPhysio().getId().equals(appointment.getPhysio().getId())
+            )
         );
 
         if (!conflict) {
@@ -71,22 +74,42 @@ public class BookingManager {
         }
         return false;
     }
-    public List<Physiotherapist> getAllPhysios() {
-    return physios;
-}
 
+    public List<Physiotherapist> getAllPhysios() {
+        return physios;
+    }
+
+    public List<Patient> getAllPatients() {
+        return patients;
+    }
+
+    public Patient getPatientById(String id) {
+        for (Patient p : patients) {
+            if (p.getId().equals(id)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
+    public List<Appointment> getAllAppointments() {
+        return appointments;
+    }
 
 public void printReport() {
     System.out.println("=== 🩺 Boost Physio Clinic Full Report ===");
 
-    // 1. Show ALL doctor information
+    // 1. Show ALL doctor information with expertise (skills)
     System.out.println("\n👨‍⚕️ All Registered Doctors:");
     for (Physiotherapist doc : physios) {
-        System.out.println("\nDoctor: " + doc.getName() + " (" + String.join(", ", doc.getExpertise()) + ")");
+        // Show doctor's name, expertise, and other details
+        System.out.println("\nDoctor: " + doc.getName() + " (Expertise: " + String.join(", ", doc.getExpertise()) + ")");
         System.out.println("ID: " + doc.getId());
         System.out.println("Address: " + doc.getAddress());
         System.out.println("Phone: " + doc.getPhone());
         System.out.printf("Consultation Fee: £%.2f\n", doc.getConsultationFee());
+
+        // Show available slots
         System.out.print("Available Slots: ");
         if (doc.getAvailability().isEmpty()) {
             System.out.println("None");
@@ -117,28 +140,39 @@ public void printReport() {
         } else {
             System.out.println("Appointments:");
             for (Appointment appt : patientAppointments) {
-                System.out.printf("- %s with %s on %s at %s | Fee: £%.2f\n",
+                String status = appt.getStatus() == Appointment.Status.BOOKED ? "Booked" :
+                        appt.getStatus() == Appointment.Status.CANCELLED ? "Cancelled" : "Attended";
+                System.out.printf("- %s with %s on %s at %s | Fee: £%.2f | Status: %s\n",
                         appt.getTreatment().getName(),
                         appt.getPhysio().getName(),
                         appt.getTime().toLocalDate(),
                         appt.getTime().toLocalTime(),
-                        appt.getPhysio().getConsultationFee());
+                        appt.getPhysio().getConsultationFee(),
+                        status);
             }
+        }
+    }
+
+    // 3. Show cancelled appointments
+    System.out.println("\n🛑 Cancelled Appointments:");
+
+    List<Appointment> cancelledAppointments = appointments.stream()
+            .filter(a -> a.getStatus() == Appointment.Status.CANCELLED)
+            .collect(Collectors.toList());
+
+    if (cancelledAppointments.isEmpty()) {
+        System.out.println("No cancelled appointments.");
+    } else {
+        for (Appointment appt : cancelledAppointments) {
+            System.out.printf("- %s with %s on %s at %s | Fee: £%.2f\n",
+                    appt.getTreatment().getName(),
+                    appt.getPhysio().getName(),
+                    appt.getTime().toLocalDate(),
+                    appt.getTime().toLocalTime(),
+                    appt.getPhysio().getConsultationFee());
         }
     }
 }
 
 
-    public List<Patient> getAllPatients() {
-    return patients;
-}
-
-    public Patient getPatientById(String id) {
-        for(Patient p : patients) {
-            if (p.getId().equals(id)){
-                return p;
-            }
-        }
-        return null;
-       }
 }
